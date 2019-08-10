@@ -1,121 +1,131 @@
 
 <app>
   <h1>Mini Crypto Market Web App</h1>
-  <div class="float-right">
-    <button onclick={() => changePage(-1)} style="margin-right: 8px" class="button button-outline">< Previous Page</button>
-    <strong style={state.loading && 'display: none;' }>{ state.pageIndex }</strong>
-    <div style='display: inline-block;' class={state.loading && 'lds-dual-ring'}></div>
-    <button onclick={() => changePage(1)} style="margin-left: 8px; margin-right: 8px" class="button button-outline">Next Page ></button>
+  <div if={!state.logging}>
+    <div if={state.isLoggedIn}>
+      <button if={state.isInFavoriteCoinsTable} onclick={goToAllList} style="margin-left: 8px" class="button">All coins list</button>
+      <button if={!state.isInFavoriteCoinsTable} onclick={goToFavoriteList} style="margin-left: 8px" class="button">Favorite coins list</button>
+    </div>
+    <div if={!state.isLoggedIn}>
+      <input onchange={event => login(event)} style="display: none;" type="file" id="file" placeholder="Keyfile" id="key_file">
+      <label style="margin-left: 8px" class="button" for="file">Login (Choose key file)</label>
+    </div>
   </div>
-  <table style="margin-left: 16px; margin-right: 16px">
-    <thead>
-      <tr>
-        <td>Name</td>
-        <td>Market Cap</td>
-        <td>Price</td>
-        <td>Volume</td>
-        <td>Circulating Supply</td>
-        <td>Market Cap Change(24h)</td>
-        <td>Price Change(24h)</td>
-      </tr>
-    </thead>
-    <tbody style={state.loading && 'opacity: 0.5;' }>
-      <tr each={ coin in state.coins }>
-        <td>
-          <div style='display: flex;align-items: center;'>
-            <img width=40 height=40px src={coin.image}/>
-            {coin.name}
-          </div>
-        </td>
-        <td>{coin.marketCap}</td>
-        <td>{coin.currentPrice}</td>
-        <td>{coin.totalVolume}</td>
-        <td>{coin.circulatingSupply}</td>
-        <td style={coin.marketCapChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.marketCapChangePercentage24h}</td>
-        <td style={coin.priceChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.priceChangePercentage24h}</td>
-      </tr>
-    </tbody>
-  </table>
-
+  <div if={state.logging}>
+    <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+  </div>
+  <favorite-coins-table if={state.isInFavoriteCoinsTable}/>
+  <coins-table if={!state.isInFavoriteCoinsTable}/>
   <style>
-    .lds-dual-ring {
+    .lds-ellipsis {
       display: inline-block;
-      margin-bottom: -1.0rem;
+      position: relative;
+      width: 64px;
+      height: 64px;
     }
-    .lds-dual-ring:after {
-      content: " ";
-      display: block;
-      width: 46px;
-      height: 46px;
-      margin: 1px;
+    .lds-ellipsis div {
+      position: absolute;
+      top: 27px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
-      border: 5px solid #9b4dca;
-      border-color: #9b4dca transparent #9b4dca transparent;
-      animation: lds-dual-ring 1.2s linear infinite;
+      background: #9b4dca;
+      animation-timing-function: cubic-bezier(0, 1, 1, 0);
     }
-    @keyframes lds-dual-ring {
+    .lds-ellipsis div:nth-child(1) {
+      left: 6px;
+      animation: lds-ellipsis1 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(2) {
+      left: 6px;
+      animation: lds-ellipsis2 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(3) {
+      left: 26px;
+      animation: lds-ellipsis2 0.6s infinite;
+    }
+    .lds-ellipsis div:nth-child(4) {
+      left: 45px;
+      animation: lds-ellipsis3 0.6s infinite;
+    }
+    @keyframes lds-ellipsis1 {
       0% {
-        transform: rotate(0deg);
+        transform: scale(0);
       }
       100% {
-        transform: rotate(360deg);
+        transform: scale(1);
+      }
+    }
+    @keyframes lds-ellipsis3 {
+      0% {
+        transform: scale(1);
+      }
+      100% {
+        transform: scale(0);
+      }
+    }
+    @keyframes lds-ellipsis2 {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(19px, 0);
       }
     }
   </style>
-
   <script>
-    const fetch = require('node-fetch');
-    const Numeral = require('numeraljs');
+    import arweaveWrap from './arweaveWrap.js';
+    import CoinsTable from './coins-table.riot';
+    import FavoriteCoinsTable from './favorite-coins-table.riot';
+
     export default {
-      
-      
-
       onBeforeMount(props, state) {
-
         this.state = {
-          coins: [],
-          loading: true,
-          pageIndex: 1
+          isInFavoriteCoinsTable: false,
+          isLoggedIn: false,
+          logging: false,
+          walletAddress: ""
         };
-
-        this.getCoinsData(this.state.pageIndex);
       },
 
-      getCoinsData(pageIndex) {
-        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${pageIndex}&sparkline=false`)
-          .then(res => res.text())
-          .then(body =>{
-            const coins = JSON.parse(body).map(coin => ({
-              id: coin.id,
-              name: coin.name,
-              image: coin.image,
-              totalVolume: Numeral(coin.total_volume).format('$ 0,0.00'),
-              currentPrice: coin.current_price > 1
-                ? Numeral(coin.current_price).format('$ 0,0.00')
-                : Numeral(coin.current_price).format('$ 0.00000'),
-              marketCap: Numeral(coin.market_cap).format('$ 0,0[.]00'),
-              priceChangePercentage24h: Numeral(coin.price_change_percentage_24h / 100).format('0.000%'),
-              marketCapChangePercentage24h: Numeral(coin.market_cap_change_percentage_24h / 100).format('0.000%'),
-              circulatingSupply: `${Numeral(coin.circulating_supply).format('0,0.00')} ${coin.symbol.toUpperCase()}`,
-              // priceSparkLine7d: coin.sparkline_in_7d.price.filter((price, index) => index % 24 === 0)
-            }));
-
-            this.update({
-              coins,
-              loading: false,
-              pageIndex
-            });
-          });
+      components: {
+        CoinsTable,
+        FavoriteCoinsTable
       },
 
-      changePage(num) {
-        const newPageIndex = this.state.pageIndex + num;
-        if(!this.state.loading && newPageIndex > 0) {
-          this.update({
-            loading: true,
-          });
-          this.getCoinsData(newPageIndex);
+      login(event) {
+        const reader = new FileReader();
+        reader.onerror = () => {
+          reader.abort();
         }
+        reader.addEventListener("load", () => {
+          arweaveWrap.login(reader.result).then(result => {
+            this.update({
+              isLoggedIn: true,
+              walletAddress: result.walletAddress
+            })
+          }).catch(err => {console.log(err)}).finally(() => {
+            this.update({
+              logging: false
+            })
+          });
+        }, false)
+        reader.readAsText(event.target.files[0])
+        this.update({
+          logging: true
+        })
+      },
+
+      goToFavoriteList() {
+        this.update({
+          isInFavoriteCoinsTable: true
+        })
+      },
+
+      goToAllList() {
+        this.update({
+          isInFavoriteCoinsTable: false
+        })
       }
     }
   </script>

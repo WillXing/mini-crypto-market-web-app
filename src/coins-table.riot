@@ -1,0 +1,118 @@
+<coins-table>
+  <div class="float-right">
+    <button onclick={() => changePage(-1)} style="margin-right: 8px" class="button button-clear">< Previous Page</button>
+    <strong style={state.loading && 'display: none;' }>{ state.pageIndex }</strong>
+    <div style='display: inline-block;' class={state.loading && 'lds-dual-ring'}></div>
+    <button onclick={() => changePage(1)} style="margin-left: 8px; margin-right: 8px" class="button button-clear">Next Page ></button>
+  </div>
+  <table style="margin-left: 16px; margin-right: 16px">
+    <thead>
+      <tr>
+        <td>Name</td>
+        <td>Market Cap</td>
+        <td>Price</td>
+        <td>Volume</td>
+        <td>Circulating Supply</td>
+        <td>Market Cap Change(24h)</td>
+        <td>Price Change(24h)</td>
+      </tr>
+    </thead>
+    <tbody style={state.loading && 'opacity: 0.5;' }>
+      <tr each={ coin in state.coins }>
+        <td>
+          <div style='display: flex;align-items: center;'>
+            <img width=40 height=40px src={coin.image}/>
+            {coin.name}
+          </div>
+        </td>
+        <td>{coin.marketCap}</td>
+        <td>{coin.currentPrice}</td>
+        <td>{coin.totalVolume}</td>
+        <td>{coin.circulatingSupply}</td>
+        <td style={coin.marketCapChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.marketCapChangePercentage24h}</td>
+        <td style={coin.priceChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.priceChangePercentage24h}</td>
+      </tr>
+    </tbody>
+  </table>
+  <style>
+    .lds-dual-ring {
+      display: inline-block;
+      margin-bottom: -1.0rem;
+    }
+    .lds-dual-ring:after {
+      content: " ";
+      display: block;
+      width: 46px;
+      height: 46px;
+      margin: 1px;
+      border-radius: 50%;
+      border: 5px solid #9b4dca;
+      border-color: #9b4dca transparent #9b4dca transparent;
+      animation: lds-dual-ring 1.2s linear infinite;
+    }
+    @keyframes lds-dual-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <script>
+    const fetch = require('node-fetch');
+    const Numeral = require('numeraljs');
+    export default {
+      
+      
+
+      onBeforeMount(props, state) {
+
+        this.state = {
+        coins: [],
+        loading: true,
+        pageIndex: 1
+        };
+
+        this.getCoinsData(this.state.pageIndex);
+      },
+
+      getCoinsData(pageIndex) {
+        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${pageIndex}&sparkline=false`)
+          .then(res => res.text())
+          .then(body =>{
+            const coins = JSON.parse(body).map(coin => ({
+              id: coin.id,
+              name: coin.name,
+              image: coin.image,
+              totalVolume: Numeral(coin.total_volume).format('$ 0,0.00'),
+              currentPrice: coin.current_price > 1
+                ? Numeral(coin.current_price).format('$ 0,0.00')
+                : Numeral(coin.current_price).format('$ 0.00000'),
+              marketCap: Numeral(coin.market_cap).format('$ 0,0[.]00'),
+              priceChangePercentage24h: Numeral(coin.price_change_percentage_24h / 100).format('0.000%'),
+              marketCapChangePercentage24h: Numeral(coin.market_cap_change_percentage_24h / 100).format('0.000%'),
+              circulatingSupply: `${Numeral(coin.circulating_supply).format('0,0.00')} ${coin.symbol.toUpperCase()}`,
+              // priceSparkLine7d: coin.sparkline_in_7d.price.filter((price, index) => index % 24 === 0)
+            }));
+
+            this.update({
+              coins,
+              loading: false,
+              pageIndex
+            });
+          });
+      },
+
+      changePage(num) {
+        const newPageIndex = this.state.pageIndex + num;
+        if(!this.state.loading && newPageIndex > 0) {
+          this.update({
+            loading: true,
+          });
+          this.getCoinsData(newPageIndex);
+        }
+      }
+    }
+  </script>
+</coins-table>
