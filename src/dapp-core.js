@@ -13,10 +13,8 @@ const login = async walletKeys => {
   const walletAddress = await arweave.wallets.jwkToAddress(
     JSON.parse(walletKeys)
   );
-  const winstonBallance = await arweave.wallets.getBalance(walletAddress);
-  const arBallance = await arweave.ar.winstonToAr(winstonBallance);
   const favoriteCoins = await getFavoriteCoins(walletAddress);
-  return { walletAddress, winstonBallance, arBallance, favoriteCoins };
+  return { walletAddress, favoriteCoins };
 };
 
 const saveFavoriteCoin = async (coinId, walletAddress) => {
@@ -59,7 +57,6 @@ const getFavoriteCoins = async walletAddress => {
     fetch(`https://kvdb.io/WBNbaiNsCuPYBQbr8m455S/${walletAddress}`)
       .then(res => res.text())
       .then(text => {
-        console.log(text);
         resolve(text);
       })
       .catch(err => reject(err));
