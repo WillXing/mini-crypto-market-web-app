@@ -15,6 +15,7 @@
         <td>Circulating Supply</td>
         <td>Market Cap Change(24h)</td>
         <td>Price Change(24h)</td>
+        <td if={props.is_logged_in}></td>
       </tr>
     </thead>
     <tbody style={state.loading && 'opacity: 0.5;' }>
@@ -31,6 +32,15 @@
         <td>{coin.circulatingSupply}</td>
         <td style={coin.marketCapChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.marketCapChangePercentage24h}</td>
         <td style={coin.priceChangePercentage24h.includes('-') ? 'color: #D94040' : 'color: #009E73'}>{coin.priceChangePercentage24h}</td>
+        <td if={props.is_logged_in}>
+          <button
+            if={!props.favorite_coins.includes(coin.id)}
+            class="button button-clear"
+            onclick={() => addToFavorite(coin.id)}>Add to favorite</button>
+          <button
+            if={props.favorite_coins.includes(coin.id)}
+            class="button button-clear">Added</button>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -60,18 +70,17 @@
     }
   </style>
   <script>
-    const fetch = require('node-fetch');
-    const Numeral = require('numeraljs');
-    export default {
-      
-      
+    import dappCore from './dapp-core.js';
+    import fetch from 'node-fetch';
+    import Numeral from 'numeraljs';
 
+    export default {
       onBeforeMount(props, state) {
 
         this.state = {
-        coins: [],
-        loading: true,
-        pageIndex: 1
+          coins: [],
+          loading: true,
+          pageIndex: 1
         };
 
         this.getCoinsData(this.state.pageIndex);
@@ -112,6 +121,10 @@
           });
           this.getCoinsData(newPageIndex);
         }
+      },
+
+      addToFavorite(coinId) {
+        dappCore.saveFavoriteCoin(coinId, this.props.wallet_address).then(() => this.props.update_favorite_coins());
       }
     }
   </script>

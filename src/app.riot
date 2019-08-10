@@ -14,8 +14,14 @@
   <div if={state.logging}>
     <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
   </div>
-  <favorite-coins-table if={state.isInFavoriteCoinsTable}/>
-  <coins-table if={!state.isInFavoriteCoinsTable}/>
+  <favorite-coins-table favorite_coins={state.favoriteCoins} if={state.isInFavoriteCoinsTable}/>
+  <coins-table
+    update_favorite_coins={updateFavoriteCoins}
+    is_logged_in={state.isLoggedIn}
+    wallet_address={state.walletAddress}
+    favorite_coins={state.favoriteCoins}
+    if={!state.isInFavoriteCoinsTable}
+  />
   <style>
     .lds-ellipsis {
       display: inline-block;
@@ -74,7 +80,7 @@
     }
   </style>
   <script>
-    import arweaveWrap from './arweaveWrap.js';
+    import dappCore from './dapp-core.js';
     import CoinsTable from './coins-table.riot';
     import FavoriteCoinsTable from './favorite-coins-table.riot';
 
@@ -84,7 +90,8 @@
           isInFavoriteCoinsTable: false,
           isLoggedIn: false,
           logging: false,
-          walletAddress: ""
+          walletAddress: "",
+          favoriteCoins: []
         };
       },
 
@@ -99,10 +106,11 @@
           reader.abort();
         }
         reader.addEventListener("load", () => {
-          arweaveWrap.login(reader.result).then(result => {
+          dappCore.login(reader.result).then(result => {
             this.update({
               isLoggedIn: true,
-              walletAddress: result.walletAddress
+              walletAddress: result.walletAddress,
+              favoriteCoins: result.favoriteCoins.split(',')
             })
           }).catch(err => {console.log(err)}).finally(() => {
             this.update({
@@ -126,6 +134,14 @@
         this.update({
           isInFavoriteCoinsTable: false
         })
+      },
+
+      updateFavoriteCoins() {
+        dappCore.getFavoriteCoins(this.state.walletAddress).then(res => {
+          this.update({
+            favoriteCoins: res.split(',')
+          })
+        });
       }
     }
   </script>

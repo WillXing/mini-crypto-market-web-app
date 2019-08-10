@@ -8,7 +8,7 @@
   <table style="margin-left: 16px; margin-right: 16px">
     <thead>
       <tr>
-        <td>Name</td>4
+        <td>Name</td>
         <td>Market Cap</td>
         <td>Price</td>
         <td>Volume</td>
@@ -60,23 +60,21 @@
     }
   </style>
   <script>
-    const fetch = require('node-fetch');
-    const Numeral = require('numeraljs');
+    import dappCore from './dapp-core.js';
+    import fetch from 'node-fetch';
+    import Numeral from 'numeraljs';
     export default {
       onBeforeMount(props, state) {
-
         this.state = {
-          favoriteCoinIds: ['bitcoin', 'litecoin'],
           coins: [],
           loading: true,
           pageIndex: 1
         };
-
         this.getCoinsData(this.state.pageIndex);
       },
 
       getCoinsData(pageIndex) {
-        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${this.state.favoriteCoinIds.join(',')}&order=market_cap_desc&per_page=100&page=${pageIndex}&sparkline=false`)
+        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${this.props.favorite_coins}&order=market_cap_desc&per_page=100&page=${pageIndex}&sparkline=false`)
           .then(res => res.text())
           .then(body =>{
             const coins = JSON.parse(body).map(coin => ({

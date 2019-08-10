@@ -12,6 +12,7 @@
   "dependencies": {
     "@riotjs/hot-reload": "^4.0.0",
     "arweave": "^1.4.1",
+    "bluzelle": "^0.6.530",
     "node-fetch": "^2.6.0",
     "numeraljs": "^1.5.6",
     "riot": "^4.3.8",
